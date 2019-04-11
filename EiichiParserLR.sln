@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.271
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EiichiParserLR", "EiichiParserLR\EiichiParserLR.vcxproj", "{286873CF-14BF-4E29-986B-97455F6C84B4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{286873CF-14BF-4E29-986B-97455F6C84B4}.Debug|x64.ActiveCfg = Debug|x64
+		{286873CF-14BF-4E29-986B-97455F6C84B4}.Debug|x64.Build.0 = Debug|x64
+		{286873CF-14BF-4E29-986B-97455F6C84B4}.Debug|x86.ActiveCfg = Debug|Win32
+		{286873CF-14BF-4E29-986B-97455F6C84B4}.Debug|x86.Build.0 = Debug|Win32
+		{286873CF-14BF-4E29-986B-97455F6C84B4}.Release|x64.ActiveCfg = Release|x64
+		{286873CF-14BF-4E29-986B-97455F6C84B4}.Release|x64.Build.0 = Release|x64
+		{286873CF-14BF-4E29-986B-97455F6C84B4}.Release|x86.ActiveCfg = Release|Win32
+		{286873CF-14BF-4E29-986B-97455F6C84B4}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {23997260-BCE1-494F-AF8D-E34391817B34}
+	EndGlobalSection
+EndGlobal
