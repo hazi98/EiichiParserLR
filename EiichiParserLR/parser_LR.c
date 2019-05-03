@@ -45,9 +45,10 @@
 
 #define LR_ESTADOS_NUMMAX 17
 #define LR_TABLA_COLUMNAS_NUMMAX (SIMBOLO_TERMINAL_EOF + SIMBOLO_NO_TERMINAL_InstrObjeto)
-#define LR_GOTO_OFFSET (SIMBOLO_TERMINAL_EOF)
+#define LR_GOTO_OFFSET (SIMBOLO_TERMINAL_EOF - 1)
 
-void pushLR(int intSimboloTipo, int intSimboloCodigo);
+
+void pushLR(int intSimboloTipo, int intSimboloCodigo, int intEstado);
 
 void pushLR_T(int intSimboloCodigo);
 
@@ -59,11 +60,13 @@ void pushLR_NT_cEdo(int intSimboloCodigo, int intEstado);
 
 void popLR();
 
+void pops_LR(int intNumPops);
+
 void vaciar_StackLR();
 
-void imprimteT_LR(int intSimboloCodigo);
+void imprimeT_LR(int intSimboloCodigo);
 
-void imprimteNT_LR(int intSimboloCodigo);
+void imprimeNT_LR(int intSimboloCodigo);
 
 
 char *MR_LR[LR_ESTADOS_NUMMAX][LR_TABLA_COLUMNAS_NUMMAX] = {
@@ -112,7 +115,7 @@ t_StackLR *ptrStackLRTop = NULL;
 
 void pushLR(int intSimboloTipo, int intSimboloCodigo, int intEstado)
 {
-	t_StackLR *nuevo = (t_StackLR *)maLRoc(sizeof(t_StackLR));
+	t_StackLR *nuevo = (t_StackLR *)malloc(sizeof(t_StackLR));
 	nuevo->intSimboloTipo = intSimboloTipo;
 	nuevo->intSimboloCodigo = intSimboloCodigo;
 	nuevo->intEstado = intEstado; //<--
@@ -157,6 +160,14 @@ void popLR()
 	}//if
 }//popLR
 
+void pops_LR(int intNumPops)
+{
+	for (int i = 0; i < intNumPops; i++)
+	{
+		popLR();
+	}
+}
+
 void vaciar_StackLR()
 {
 	while (ptrStackLRTop != NULL)
@@ -166,7 +177,7 @@ void vaciar_StackLR()
 
 
 
-void imprimteT_LR(int intSimboloCodigo)
+void imprimeT_LR(int intSimboloCodigo)
 {
 	switch (intSimboloCodigo)
 	{
@@ -188,7 +199,7 @@ void imprimteT_LR(int intSimboloCodigo)
 	}//switch
 }//imprimteT_LR
 
-void imprimteNT_LR(int intSimboloCodigo)
+void imprimeNT_LR(int intSimboloCodigo)
 {
 	switch (intSimboloCodigo)
 	{
@@ -212,7 +223,7 @@ void imprime_entrada_LR()
 	printf("Entrada: ");
 	while (aux != NULL)
 	{
-		imprimteT_LR(aux->intTokenCodigo);
+		imprimeT_LR(aux->intTokenCodigo);
 		printf("   ");
 		aux = aux->ptrSig;
 	}//while
@@ -227,11 +238,11 @@ void stack_imprime2_LR(t_StackLR *nodoStack)
 		switch (nodoStack->intSimboloTipo)
 		{
 		case TIPO_SIMBOLO_TERMINAL:
-			imprimteT_LR(nodoStack->intSimboloCodigo);
+			imprimeT_LR(nodoStack->intSimboloCodigo);
 			printf(" %d ", nodoStack->intEstado);
 			break;
 		case TIPO_SIMBOLO_NO_TERMINAL:
-			imprimteNT_LR(nodoStack->intSimboloCodigo);
+			imprimeNT_LR(nodoStack->intSimboloCodigo);
 			break;
 		case TIPO_SIMBOLO_NO_DEFINIDO:		//<--
 			printf(" 0 ");					//<--
@@ -272,17 +283,18 @@ int ObtenerAccion(int intEstado, int intSimboloT)
 	default:
 		break;
 	}//switch
+	return intActionRes;
 }//ObtenerAccion
 
 int ObtenerEstadoDeShift(int intEstado, int intSimboloT)
 {
 	int intRes = LR_ACTION_ERROR;
 
-	if (MR_LR[intEstado][intSimboloT][0] == LR_ACTION_SHIFT)
+	if (MR_LR[intEstado][intSimboloT][0] == LR_STRING_ACTION_SHIFT)
 	{
 		int res = atoi(MR_LR[intEstado][intSimboloT] + 1);
 	}//if
-	
+
 	return intRes;
 }//ObtenerEstadoDeShift
 
@@ -290,7 +302,7 @@ int ObtenerNumReglaDeReduce(int intEstado, int intSimboloT)
 {
 	int intRes = LR_ACTION_ERROR;
 
-	if (MR_LR[intEstado][intSimboloT][0] == LR_ACTION_REDUCE)
+	if (MR_LR[intEstado][intSimboloT][0] == LR_STRING_ACTION_REDUCE)
 	{
 		int res = atoi(MR_LR[intEstado][intSimboloT] + 1);
 	}//if
@@ -298,44 +310,82 @@ int ObtenerNumReglaDeReduce(int intEstado, int intSimboloT)
 	return intRes;
 }//ObtenerNumReglaDeReduce
 
+int ObtenerGoto(int intEstado, int intSimboloNT)
+{
+	int intRes = LR_ERROR;
+
+	if (MR_LR[intEstado][LR_GOTO_OFFSET + intSimboloNT] != '\0')
+	{
+		intRes = atoi(MR_LR[intEstado][LR_GOTO_OFFSET + intSimboloNT]);
+	}
+	return intRes;
+}//ObtenerGoto
+
+void PonerEstadoPorReduce(int intEstado)
+{
+	if (ptrStackLRTop != NULL)
+		ptrStackLRTop->intEstado = intEstado;
+}//PonerEstadoPorProduce
+
+int ReemplazaEnStack_RHSporLHS(int int_NumElemRHS, int intSimboloNTCodigo)
+{
+	int intEstadoAnterior, intEstadoNuevo;
+
+	pops_LR(int_NumElemRHS); // <--
+	// Se obtiene el estado del simbolo arriba del stack antes de insertar el NT
+	intEstadoAnterior = (ptrStackLRTop != NULL) ? ptrStackLRTop->intEstado : LR_ERROR;
+	// Se inserta el NT del lado Izquierdo LHS de la regla
+	pushLR_NT(intSimboloNTCodigo);
+	intEstadoNuevo = (intEstadoAnterior != LR_ERROR) ? ObtenerGoto(intEstadoAnterior, intSimboloNTCodigo) : LR_ERROR;
+	if (intEstadoNuevo != LR_ERROR)
+		PonerEstadoPorReduce(intEstadoNuevo);
+	if ((intEstadoAnterior != LR_ERROR) && (intEstadoNuevo != LR_ERROR))
+		return TRUE;
+	else return FALSE;
+}//ReemplazaEnStack_RHSporLHS
+
 int ReducePorRegla(int intRegla)
 {
-	int intEstadoAnterior;
-	int intEstadoNuevo;
+	int intRes = FALSE;
 	switch (intRegla)
 	{
 	case 1: // 1. Programa -> Instruccion ; Programa
 		// Se sacan del stack el # de elementos de la parte derecha RMS
 		// Pero cada nodo del stack ya tiene un par de elementos (simbolo,estado)
-		pops_LR(3);
-		// Se obtiene el estado del simbolo arriba del stack antes de insertar el NT
-		intEstadoAnterior = (ptrStackLRTop != NULL) ? ptrStackLRTop->intEstado : LR_ERROR;
-		// Se inserta el NT del lado Izquierdo LHS de la regla
-		pushLR_NT(SIMBOLO_NO_TERMINAL_Programa);
-		intEstadoNuevo = (intEstadoAnterior != LR_ERROR) ? ObtenerGoto(intEstadoAnterior, SIMBOLO_NO_TERMINAL_Programa) : LR_ERROR;
-		if(intEstadoNuevo) //TODO
+		intRes = ReemplazaEnStack_RHSporLHS(3, SIMBOLO_NO_TERMINAL_Programa);
 		break;
 	case 2: // 2. Programa -> Instruccion ;
+		intRes = ReemplazaEnStack_RHSporLHS(2, SIMBOLO_NO_TERMINAL_Programa);
 		break;
 	case 3: // 3. Instruccion -> InstrVuelta 
+		intRes = ReemplazaEnStack_RHSporLHS(1, SIMBOLO_NO_TERMINAL_Instruccion);
 		break;
 	case 4: // 4. Instruccion -> InstrAvanza
+		intRes = ReemplazaEnStack_RHSporLHS(1, SIMBOLO_NO_TERMINAL_Instruccion);
 		break;
 	case 5: // 5. Instruccion -> InstrSiChocas
+		intRes = ReemplazaEnStack_RHSporLHS(1, SIMBOLO_NO_TERMINAL_Instruccion);
 		break;
 	case 6: // 6. Instruccion -> InstrObjeto
+		intRes = ReemplazaEnStack_RHSporLHS(1, SIMBOLO_NO_TERMINAL_Instruccion);
 		break;
-	case 7: // 7. Instruccion -> Instr
+	case 7: // 7. InstrVuelta -> VDER
+		intRes = ReemplazaEnStack_RHSporLHS(1, SIMBOLO_NO_TERMINAL_InstrVuelta);
 		break;
-	case 8: // 8. Programa -> Instruccion ; Programa
+	case 8: // 8. InstrVuelta -> VIZQ
+		intRes = ReemplazaEnStack_RHSporLHS(1, SIMBOLO_NO_TERMINAL_InstrVuelta);
 		break;
-	case 9: // 9. Programa -> Instruccion ; Programa
+	case 9: // 9. InstrAvanza -> AVANZA Num
+		intRes = ReemplazaEnStack_RHSporLHS(2, SIMBOLO_NO_TERMINAL_InstrAvanza);
 		break;
-	case 10: // 10. Programa -> Instruccion ; Programa
+	case 10: // 10. InstrSiChocas -> SI_CHOCAS Instruccion
+		intRes = ReemplazaEnStack_RHSporLHS(2, SIMBOLO_NO_TERMINAL_InstrSiChocas);
 		break;
-	case 11: // 11. Programa -> Instruccion ; Programa
+	case 11: // 11. InstrObjeto -> RECOGE
+		intRes = ReemplazaEnStack_RHSporLHS(1, SIMBOLO_NO_TERMINAL_InstrObjeto);
 		break;
-	case 12:
+	case 12: // 12. InstrObjeto -> DEJA
+		intRes = ReemplazaEnStack_RHSporLHS(1, SIMBOLO_NO_TERMINAL_InstrObjeto);
 		break;
 	default:
 		break;
@@ -349,6 +399,7 @@ int parser_LR()
 	int intAction;
 	int intEstado;
 	int intTokenCodigo;
+	int intRegla, intReduceRes;
 
 	// Inicializa el apuntador de recorrido de la cadena de entrada
 	ptrCurrentTokenLR = ptrTokenList;
@@ -394,10 +445,24 @@ int parser_LR()
 					// Se reduce por la regla indicada
 					intReduceRes = ReducePorRegla(intRegla);
 					// Si no se puede reducir, se marca error
+					if (!intReduceRes)
+					{
+						// Si intReduceRes = FALSe, hubo error al reducir
+						printf("Error Sintactico Token=%s, Renglon=%d, Columna=%d\n - No hay elementos en la entrada\n",
+							ptrCurrentTokenLR->strTokenTextoFuente,
+							ptrCurrentTokenLR->intReglon,
+							ptrCurrentTokenLR->intColumna);
+					}
 					break;
 				case LR_ACTION_ACCEPT:
+					printf("Entrada Reconocida. Analisis sintactico correcto\n");
+					intBanderaEntradaReconocida = TRUE;
 					break;
 				case LR_ACTION_ERROR:
+					printf("Error Sintactico Token=%s, Renglon=%d, Columna=%d\n - No hay elementos en la entrada\n",
+						ptrCurrentTokenLR->strTokenTextoFuente,
+						ptrCurrentTokenLR->intReglon,
+						ptrCurrentTokenLR->intColumna);
 					break;
 				default:
 					break;
@@ -428,4 +493,3 @@ int parser_LR()
 	} while ((!intBanderaErrorSintactico) && (!intBanderaEntradaReconocida));
 
 }
-

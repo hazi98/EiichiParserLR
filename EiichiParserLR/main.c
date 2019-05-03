@@ -20,6 +20,7 @@ void scanner(char *strArchivoNombre);
 int parser_PDRC();
 int parser_LL();
 int ObtenerAccion(int intEstado, int intSimboloT);
+int ReemplazaEnStack_RHSporLHS(int int_NumElemRHS, int intSimboloNTCodigo);
 int parser_LR(); // <--
 int ListaTokens_Imprime();
 int ListaToken_Libera();
